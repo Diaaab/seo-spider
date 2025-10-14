@@ -1,0 +1,14 @@
+{
+  "name": "seo-scraper",
+  "version": "1.0.0",
+  "description": "SEO data scraper with Cloudflare Pages deployment",
+  "main": "scraper.js",
+  "scripts": {
+    "scrape": "node scraper.js",
+    "dev": "node scraper.js"
+  },
+  "dependencies": {
+    "puppeteer": "^21.5.0",
+    "csv-writer": "^1.6.0"
+  }
+}
