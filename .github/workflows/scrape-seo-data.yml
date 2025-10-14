@@ -11,12 +11,6 @@ on:
     paths:
       - 'urls.txt'
 
-# Required for GitHub Pages deployment
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -80,29 +74,3 @@ jobs:
             data/seo-results.csv
             public/index.html
           retention-days: 90
-
-  # Deploy to GitHub Pages
-  deploy:
-    needs: scrape
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-        
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './public'
-          
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
