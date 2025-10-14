@@ -1,14 +1,21 @@
+# .github/workflows/scrape-seo-data.yml
 name: Scrape SEO Data
 
 on:
   schedule:
-    - cron: '0 2 * * *'
-  workflow_dispatch:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  workflow_dispatch:      # Manual trigger
   push:
     branches:
       - main
     paths:
       - 'urls.txt'
+
+# Required for GitHub Pages deployment
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
   scrape:
@@ -24,9 +31,7 @@ jobs:
           node-version: '20'
           
       - name: Install dependencies
-        run: |
-          npm init -y
-          npm install puppeteer csv-writer
+        run: npm install puppeteer csv-writer
           
       - name: Install Chrome dependencies
         run: |
@@ -54,8 +59,6 @@ jobs:
             
       - name: Run scraper
         run: node scraper.js
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Generate timestamp
         id: timestamp
@@ -65,17 +68,8 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add data/seo-results.json data/seo-results.csv
+          git add data/ public/
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update SEO data - ${{ steps.timestamp.outputs.date }}" && git push)
-          
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: seo-scraper-dashboard
-          directory: public
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -84,4 +78,31 @@ jobs:
           path: |
             data/seo-results.json
             data/seo-results.csv
+            public/index.html
           retention-days: 90
+
+  # Deploy to GitHub Pages
+  deploy:
+    needs: scrape
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './public'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
